@@ -1,13 +1,13 @@
 # hydro-analysis
 
-`hydro-analysis` 是一个中文水文分析 skill，包含降雨—径流分析、SCS 单位线
-计算说明和水文可视化规范。
+`hydro-analysis` 是一个面向 WorkBuddy 等 Agent 开发与运行的中文水文分析
+skill，包含降雨—径流分析、SCS 单位线计算说明和水文可视化规范。
 
 ## 当前范围
 
 仓库目前包含：
 
-- `SKILL.md`：面向 Codex/兼容 agent 的技能说明；
+- `SKILL.md`：面向 WorkBuddy 等 Agent 的技能说明；
 - `scripts/scs_unit_hydrograph.py`：参考性的 Python 计算脚本；
 - `references/visualization_standards.md`：降雨—径流图表规范。
 
