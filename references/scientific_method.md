@@ -66,6 +66,7 @@
 | PRF=484 shape | `NRCS_484_*`, `generate_unit_hydrograph()` | direct interpolation of table 16-1 over `0<=t/Tp<=5` |
 | Rainfall conversion | `analyze_flood_hydrograph()` | intensity mm/h multiplied by `dt_rain_h`; interval-uniform intensity is then represented on the ΔD grid |
 | Routing | `analyze_flood_hydrograph()`, `convolve_rainfall_runoff()` | net-depth increments occur every ΔD; the ΔD-duration UH is sampled at `dt` and shifted by ΔD |
+| Plot-data mapping | `prepare_precipitation_runoff_plot_data()` | total/net rain share ΔD and units; bars use interval centers; flow preserves `time_h` and calculated peak |
 | Mass balance | `analyze_flood_hydrograph()` | `Σq Δt = ΣPe A`; relative error must be `<=1e-10` |
 
 The published table is rounded. Its trapezoidal integral is about `1.33595`, so a dimensional
@@ -139,6 +140,8 @@ The automated suite covers:
   and a direct test that unit hydrographs are shifted by ΔD rather than by output `dt`;
 - invalid/negative/nonfinite inputs and unsupported alpine use;
 - CN/AMC table values, composite-CN boundaries, and explicit nonstandard-lambda warnings.
+- professional plot-data invariants: same-unit nested rain bars, ΔD interval centres, continuous flow time,
+  and unchanged calculated peak values.
 
 ### Deterministic sensitivity check (2026-08-14)
 

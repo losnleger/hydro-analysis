@@ -40,9 +40,15 @@
     `Ia=0.2S`.
 - Added `references/scientific_method.md` with source-to-code mapping, units, pre-fix counterexamples,
   fail-closed rules, and validation limits.
-- Expanded the suite to 37 tests covering every published table 16-1 discharge ordinate, NEH chapter 16
+- Added `prepare_precipitation_runoff_plot_data()` and a strict professional hyetograph/hydrograph
+  contract: inverted rainfall, nested effective-rainfall bars, shared continuous time, consistent ΔD
+  units, unmodified peak values, and no default smoothing.
+- Added a tested Matplotlib PNG renderer whose rainfall axis is inverted, nested bars share interval
+  centres, flow ordinates remain unmodified, and the complete recession is retained.
+- Expanded the suite to 40 tests covering every published table 16-1 discharge ordinate, NEH chapter 16
   example 16-1, time relations, rainfall-duration conversion, ΔD-period hydrograph shifts, aligned output
-  sampling, mass balance, invalid inputs, HSG/CN/AMC values, and documented method boundaries.
+  sampling, plot-data alignment and rendered geometry, mass balance, invalid inputs, HSG/CN/AMC values,
+  and documented method boundaries.
 
 Passing tests establish official analytical reproduction and software/numerical consistency only; they do
 not establish real-basin calibration, predictive accuracy, independent engineering review, or professional

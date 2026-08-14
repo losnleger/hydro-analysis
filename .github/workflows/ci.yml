@@ -21,7 +21,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: python -m pip install -r requirements-dev.txt
-      - run: python -m py_compile scripts/scs_unit_hydrograph.py
+      - run: python -m py_compile scripts/scs_unit_hydrograph.py scripts/generate_chart.py
       - run: python -m pytest -q
 
   windows-smoke:
@@ -33,6 +33,7 @@ jobs:
           python-version: "3.13"
           cache: pip
       - run: python -m pip install -r requirements-dev.txt
-      - run: python -m py_compile scripts/scs_unit_hydrograph.py
+      - run: python -m py_compile scripts/scs_unit_hydrograph.py scripts/generate_chart.py
       - run: python -m pytest -q
       - run: python scripts/scs_unit_hydrograph.py
+      - run: python scripts/generate_chart.py --output outputs/ci_hydrograph.png --dpi 96

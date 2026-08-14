@@ -10,17 +10,20 @@ skill，包含降雨—径流分析、NRCS/SCS-CN 与标准 PRF=484 单位线参
 
 - `SKILL.md`：面向 WorkBuddy 等 Agent 的技能说明；
 - `scripts/scs_unit_hydrograph.py`：参考性的 Python 计算脚本（含基于
-  USDA NRCS TR-55/NEH-630 的 CN、AMC、标准表 16-1 单位线与质量平衡诊断）；
+  USDA NRCS TR-55/NEH-630 的 CN、AMC、标准表 16-1 单位线、质量平衡诊断
+  和专业降雨—径流绘图数据契约）；
+- `scripts/generate_chart.py`：生成倒置总雨/净雨嵌套柱与向上流量过程线的
+  专业静态 PNG；
 - `agents/openai.yaml`：Agent UI 展示名、简述与默认调用提示；
 - `references/visualization_standards.md`：降雨—径流图表规范。
 - `references/scientific_method.md`：公式、单位、适用边界、修复前反例与验证证据。
 
-原技能说明中提到的 `generate_chart.py` 和 `generate_report.py` 尚未实现，
-因此当前版本不提供 HTML、PNG、Word 或 Excel 导出器。
+当前版本已提供 PNG 图表生成器；`generate_report.py` 及 HTML、Word、Excel
+导出器尚未实现。
 
 ## 安装与运行
 
-需要 Python 3.9+ 和 NumPy：
+需要 Python 3.9+、NumPy 和 Matplotlib：
 
 ```powershell
 python -m venv .venv
@@ -39,7 +42,10 @@ python -m pytest -q
 ## 最小调用示例
 
 ```python
-from scripts.scs_unit_hydrograph import analyze_flood_hydrograph
+from scripts.scs_unit_hydrograph import (
+    analyze_flood_hydrograph,
+    prepare_precipitation_runoff_plot_data,
+)
 
 result = analyze_flood_hydrograph(
     rainfall=[20, 50, 10],  # 等时段雨强，mm/h
@@ -51,6 +57,21 @@ result = analyze_flood_hydrograph(
 
 print(result["peak_flow"], result["peak_time_h"])
 print(result["total_volume"], result["mass_balance_relative_error"])
+
+# 供 Matplotlib/ECharts 绘制专业倒置雨量—径流组合图
+plot = prepare_precipitation_runoff_plot_data(result)
+```
+
+生成静态专业图：
+
+```python
+from scripts.generate_chart import generate_precipitation_runoff_chart
+
+generate_precipitation_runoff_chart(
+    result,
+    "outputs/precipitation_runoff_chart.png",
+    dpi=300,
+)
 ```
 
 关键输入契约：
@@ -74,6 +95,12 @@ print(result["total_volume"], result["mass_balance_relative_error"])
   原始 1.25–112 acre 样本范围时默认失败关闭；
 - `peak_flow` 是本场过程线实际洪峰，`Qp` 仍表示 10 mm 单位净雨的理论峰值。
 
+专业图表默认使用同一连续时间轴：总雨蓝色宽柱与净雨橙色窄柱从顶部零线向下，
+净雨水平居中嵌在总雨内部；流量从底部零线向上。helper 会把总雨和净雨统一为
+同一 ΔD、同一单位并给出时段中心与柱宽，同时保留原始 `time_h` 流量过程。
+默认禁止会改变洪峰的普通平滑插值。详细规则见
+[`references/visualization_standards.md`](references/visualization_standards.md)。
+
 ## 科学边界
 
 这是研究/示例用途的参考实现，不是经过流域率定、独立工程复核或主管部门审查的
@@ -90,8 +117,9 @@ print(result["total_volume"], result["mass_balance_relative_error"])
 
 当前测试覆盖 NRCS 表 16-1 全部纵坐标、NEH-630 第 16 章 Example 16-1、
 Tc/lag/ΔD/Tp 关系、SCS-CN 公式、雨强到雨深换算、按 ΔD 平移单位线、相容网格
-失败关闭、完整退水、质量守恒和异常输入。验证等级为“官方解析基准 + 软件数值
-验证”；没有真实流域过程数据、参数率定或独立专业审查，因此不是专业水文验证。
+失败关闭、完整退水、质量守恒、异常输入，以及 PNG 的倒置雨轴、嵌套柱几何和
+原始流量时序。验证等级为“官方解析基准 + 软件数值/渲染验证”；没有真实流域
+过程数据、参数率定或独立专业审查，因此不是专业水文验证。
 
 ## 贡献与安全
 

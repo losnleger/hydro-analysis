@@ -11,6 +11,12 @@ MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
 
+GENERATOR_PATH = Path(__file__).parents[1] / "scripts" / "generate_chart.py"
+GENERATOR_SPEC = importlib.util.spec_from_file_location("generate_chart", GENERATOR_PATH)
+GENERATOR = importlib.util.module_from_spec(GENERATOR_SPEC)
+assert GENERATOR_SPEC.loader is not None
+GENERATOR_SPEC.loader.exec_module(GENERATOR)
+
 
 # ---------------------------------------------------------------------------
 # NRCS time relations and standard PRF=484 dimensionless unit hydrograph
@@ -413,6 +419,10 @@ def test_zero_runoff_coefficient_returns_zero_hydrograph_without_invalid_cn():
     assert result["CN"] is None
     assert np.all(result["runoff"] == 0)
     assert result["total_volume"] == 0
+    plot = MODULE.prepare_precipitation_runoff_plot_data(result)
+    assert plot["peak_index"] == 0
+    assert plot["peak_time_h"] == 0
+    assert plot["peak_flow_m3_s"] == 0
 
 
 def test_reported_peak_and_durations_are_hours_not_array_indices():
@@ -425,6 +435,96 @@ def test_reported_peak_and_durations_are_hours_not_array_indices():
     assert result["recession_duration"] >= 0
     assert result["peak_flow"] == pytest.approx(np.max(result["runoff"]))
     assert result["peak_modulus"] == pytest.approx(result["peak_flow"] / 1.0)
+
+
+def test_plot_data_contract_aligns_nested_rain_bars_and_flow_time():
+    result = MODULE.analyze_flood_hydrograph(
+        rainfall=[20, 60, 10], A=1, CN=75, tc=60, dt=0.0625
+    )
+    plot = MODULE.prepare_precipitation_runoff_plot_data(result)
+    delta_d = result["unit_duration"]
+    assert plot["rainfall_unit"] == "mm/h"
+    assert np.allclose(
+        plot["total_rainfall"], result["rainfall_depth_unit_mm"] / delta_d
+    )
+    assert np.allclose(
+        plot["net_rainfall"], result["net_rainfall_depth_mm"] / delta_d
+    )
+    assert np.all(plot["net_rainfall"] <= plot["total_rainfall"] + 1e-12)
+    assert np.allclose(
+        plot["rainfall_time_center_h"],
+        result["net_rainfall_time_h"] + 0.5 * delta_d,
+    )
+    assert plot["total_bar_width_h"] == pytest.approx(0.80 * delta_d)
+    assert plot["net_bar_width_h"] == pytest.approx(0.45 * delta_d)
+    assert np.allclose(plot["flow_time_h"], result["time_h"])
+    assert np.allclose(plot["flow_m3_s"], result["runoff"])
+    assert plot["peak_time_h"] == pytest.approx(result["peak_time_h"])
+    assert plot["rainfall_axis_inverted"] is True
+    assert plot["flow_smoothing"] is False
+
+    depth_plot = MODULE.prepare_precipitation_runoff_plot_data(
+        result, rainfall_display="depth"
+    )
+    assert depth_plot["rainfall_unit"] == "mm/ΔD"
+    assert np.allclose(depth_plot["total_rainfall"], result["rainfall_depth_unit_mm"])
+
+
+def test_plot_data_contract_rejects_mixed_units_or_non_nested_rain():
+    result = MODULE.analyze_flood_hydrograph(
+        rainfall=[20, 30], runoff_coeff=0.3, A=1, tc=60
+    )
+    invalid = result.copy()
+    invalid["net_rainfall_depth_mm"] = (
+        np.asarray(result["rainfall_depth_unit_mm"]) + 1.0
+    )
+    with pytest.raises(ValueError, match="净雨深不得大于总雨深"):
+        MODULE.prepare_precipitation_runoff_plot_data(invalid)
+    with pytest.raises(ValueError, match="intensity.*depth"):
+        MODULE.prepare_precipitation_runoff_plot_data(result, rainfall_display="mixed")
+    shifted_time = result.copy()
+    shifted_time["time_h"] = np.asarray(result["time_h"]) + result["dt"]
+    with pytest.raises(ValueError, match="从 0 开始"):
+        MODULE.prepare_precipitation_runoff_plot_data(shifted_time)
+    missing_dt = result.copy()
+    missing_dt.pop("dt")
+    with pytest.raises(ValueError, match="缺少绘图字段"):
+        MODULE.prepare_precipitation_runoff_plot_data(missing_dt)
+
+
+def test_static_chart_generator_enforces_professional_geometry(tmp_path):
+    result = MODULE.analyze_flood_hydrograph(
+        rainfall=[20, 60, 10], A=1, CN=75, tc=60, dt=0.0625
+    )
+    fig, rain_ax, flow_ax, plot = GENERATOR.build_precipitation_runoff_figure(result)
+    try:
+        count = len(plot["total_rainfall"])
+        assert rain_ax.yaxis_inverted()
+        assert rain_ax.xaxis.get_ticks_position() == "top"
+        assert len(rain_ax.patches) == 2 * count
+        total_patches = rain_ax.patches[:count]
+        net_patches = rain_ax.patches[count:]
+        for index, (total_patch, net_patch) in enumerate(zip(total_patches, net_patches)):
+            total_center = total_patch.get_x() + 0.5 * total_patch.get_width()
+            net_center = net_patch.get_x() + 0.5 * net_patch.get_width()
+            assert total_center == pytest.approx(plot["rainfall_time_center_h"][index])
+            assert net_center == pytest.approx(total_center)
+            assert net_patch.get_width() < total_patch.get_width()
+            assert net_patch.get_height() <= total_patch.get_height() + 1e-12
+        assert len(flow_ax.lines) == 1
+        assert np.allclose(flow_ax.lines[0].get_xdata(), result["time_h"])
+        assert np.allclose(flow_ax.lines[0].get_ydata(), result["runoff"])
+        assert "SCS-CN + NRCS PRF=484" in fig._suptitle.get_text()
+    finally:
+        GENERATOR.plt.close(fig)
+
+    output = tmp_path / "professional_hydrograph.png"
+    generated = GENERATOR.generate_precipitation_runoff_chart(result, output, dpi=96)
+    assert generated == output.resolve()
+    assert output.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+    assert output.stat().st_size > 10_000
+    with pytest.raises(ValueError, match="仅支持 .png"):
+        GENERATOR.generate_precipitation_runoff_chart(result, tmp_path / "chart.jpg")
 
 
 def test_reference_example_runs_without_nan_with_explicit_tc():

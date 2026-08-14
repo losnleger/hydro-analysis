@@ -1001,6 +1001,95 @@ def analyze_flood_hydrograph(rainfall, runoff_coeff=None, A=None, **kwargs):
         ),
     }
 
+
+def prepare_precipitation_runoff_plot_data(result, rainfall_display="intensity"):
+    """将分析结果转换为专业降雨—径流图的同单位、同时间基准数据。
+
+    降雨柱和净雨柱必须共用实际单位净雨历时 ΔD。默认返回 mm/h：把每个
+    ΔD 内的总雨深和净雨深同时除以 ΔD；也可用 ``rainfall_display='depth'``
+    返回 mm/ΔD。柱中心位于时段中点，流量仍使用模型 ``time_h`` 连续时间轴。
+    此函数只准备绘图数据，不对过程线作平滑、插值或洪峰重算。
+    """
+    if not isinstance(result, dict):
+        raise ValueError("result 必须是 analyze_flood_hydrograph() 返回的字典")
+    required = (
+        "unit_duration",
+        "rainfall_depth_unit_mm",
+        "net_rainfall_depth_mm",
+        "net_rainfall_time_h",
+        "dt",
+        "time_h",
+        "runoff",
+    )
+    missing = [name for name in required if name not in result]
+    if missing:
+        raise ValueError("result 缺少绘图字段：" + ", ".join(missing))
+
+    unit_duration_h = _validate_positive(result["unit_duration"], "unit_duration")
+    total_depth_mm = _as_nonnegative_1d(
+        result["rainfall_depth_unit_mm"], "rainfall_depth_unit_mm"
+    )
+    net_depth_mm = _as_nonnegative_1d(
+        result["net_rainfall_depth_mm"], "net_rainfall_depth_mm"
+    )
+    rain_start_h = _as_nonnegative_1d(
+        result["net_rainfall_time_h"], "net_rainfall_time_h"
+    )
+    if not (len(total_depth_mm) == len(net_depth_mm) == len(rain_start_h)):
+        raise ValueError("总雨、净雨和雨量时间数组长度必须一致")
+    expected_start_h = np.arange(len(total_depth_mm), dtype=float) * unit_duration_h
+    if not np.allclose(rain_start_h, expected_start_h, rtol=0.0, atol=1e-10):
+        raise ValueError("雨量时间必须是从 0 开始、步长为 ΔD 的时段起点")
+    depth_tolerance = 1e-10 * max(1.0, float(np.max(total_depth_mm)))
+    if np.any(net_depth_mm > total_depth_mm + depth_tolerance):
+        raise ValueError("同一 ΔD 内净雨深不得大于总雨深，不能绘制嵌套雨柱")
+
+    model_dt_h = _validate_positive(result["dt"], "dt")
+    flow_time_h = _as_nonnegative_1d(result["time_h"], "time_h")
+    flow_m3_s = _as_nonnegative_1d(result["runoff"], "runoff")
+    if len(flow_time_h) != len(flow_m3_s):
+        raise ValueError("流量与流量时间数组长度必须一致")
+    expected_flow_time_h = np.arange(len(flow_time_h), dtype=float) * model_dt_h
+    if not np.allclose(flow_time_h, expected_flow_time_h, rtol=0.0, atol=1e-10):
+        raise ValueError("流量时间必须从 0 开始并按模型 dt 严格递增")
+
+    display = str(rainfall_display).strip().lower()
+    if display == "intensity":
+        total_rain = total_depth_mm / unit_duration_h
+        net_rain = net_depth_mm / unit_duration_h
+        rainfall_unit = "mm/h"
+        rainfall_axis_label = "降雨强度 (mm/h)"
+    elif display == "depth":
+        total_rain = total_depth_mm.copy()
+        net_rain = net_depth_mm.copy()
+        rainfall_unit = "mm/ΔD"
+        rainfall_axis_label = "时段雨深 (mm/ΔD)"
+    else:
+        raise ValueError("rainfall_display 仅支持 'intensity' 或 'depth'")
+
+    peak_index = int(np.argmax(flow_m3_s))
+    return {
+        "rainfall_time_start_h": rain_start_h.copy(),
+        "rainfall_time_center_h": rain_start_h + 0.5 * unit_duration_h,
+        "rainfall_interval_h": unit_duration_h,
+        "total_rainfall": total_rain,
+        "net_rainfall": net_rain,
+        "rainfall_unit": rainfall_unit,
+        "rainfall_axis_label": rainfall_axis_label,
+        "total_bar_width_h": 0.80 * unit_duration_h,
+        "net_bar_width_h": 0.45 * unit_duration_h,
+        "flow_time_h": flow_time_h.copy(),
+        "flow_interval_h": model_dt_h,
+        "flow_m3_s": flow_m3_s.copy(),
+        "flow_axis_label": "流量 (m³/s)",
+        "peak_index": peak_index,
+        "peak_time_h": float(flow_time_h[peak_index]),
+        "peak_flow_m3_s": float(flow_m3_s[peak_index]),
+        "rainfall_axis_inverted": True,
+        "flow_smoothing": False,
+        "time_reference": "rain bars centered on ΔD intervals; flow uses model time_h",
+    }
+
 # 测试代码
 if __name__ == '__main__':
     import sys
