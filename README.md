@@ -1,15 +1,19 @@
 # hydro-analysis
 
 `hydro-analysis` 是一个面向 WorkBuddy 等 Agent 开发与运行的中文水文分析
-skill，包含降雨—径流分析、SCS 单位线计算说明和水文可视化规范。
+skill，包含降雨—径流分析、NRCS/SCS-CN 与标准 PRF=484 单位线参考实现，
+以及水文可视化规范。
 
 ## 当前范围
 
 仓库目前包含：
 
 - `SKILL.md`：面向 WorkBuddy 等 Agent 的技能说明；
-- `scripts/scs_unit_hydrograph.py`：参考性的 Python 计算脚本；
+- `scripts/scs_unit_hydrograph.py`：参考性的 Python 计算脚本（含基于
+  USDA NRCS TR-55/NEH-630 的 CN、AMC、标准表 16-1 单位线与质量平衡诊断）；
+- `agents/openai.yaml`：Agent UI 展示名、简述与默认调用提示；
 - `references/visualization_standards.md`：降雨—径流图表规范。
+- `references/scientific_method.md`：公式、单位、适用边界、修复前反例与验证证据。
 
 原技能说明中提到的 `generate_chart.py` 和 `generate_report.py` 尚未实现，
 因此当前版本不提供 HTML、PNG、Word 或 Excel 导出器。
@@ -32,22 +36,62 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
+## 最小调用示例
+
+```python
+from scripts.scs_unit_hydrograph import analyze_flood_hydrograph
+
+result = analyze_flood_hydrograph(
+    rainfall=[20, 50, 10],  # 等时段雨强，mm/h
+    dt_rain_h=1.0,
+    A=1.0,                  # km²
+    CN=70,                  # 当前场次 CN
+    tc=60.0,                # min；也可直接给 Tp，或给 L+slope 使用 Kirpich
+)
+
+print(result["peak_flow"], result["peak_time_h"])
+print(result["total_volume"], result["mass_balance_relative_error"])
+```
+
+关键输入契约：
+
+- `rainfall` 是雨强 `mm/h`；程序先乘 `dt_rain_h` 得到输入时段雨深，再按实际
+  单位净雨历时 ΔD 划分。只有输入时段雨强时，明确假定该时段内雨强均匀，并在
+  ΔD 边界重新计算累计 SCS-CN 产流；
+- `tp` 表示单位线峰现时间 `Tp`，不是 watershed lag；返回值另含 `lag`；
+- 只给 `tp` 时，程序采用 `ΔD≈0.2Tp` 的显式工程桥接并在 `assumptions` 中标记；
+  它不同时严格复现 `ΔD=0.133Tc`。需要严格 NRCS 时间关系时应提供 `tc`；
+- `ΔD=0.133Tc` 是 NRCS 目标值。默认会将 ΔD 对齐为 `dt_rain_h` 的精确约数并
+  重新计算 `Tp`；结果同时返回 `unit_duration_target`、`unit_duration` 和调整假设。
+  显式 `unit_duration_h` 若不能整除 `dt_rain_h`，则失败关闭；
+- `dt` 只是过程线输出采样，必须精确整除实际 ΔD 且 `dt≤0.1Tp`。每个净雨增量
+  按 ΔD 平移单位线，绝不能把同一条 ΔD-duration 单位线按每个 `dt` 重复施加；
+- `time_h=0` 是第一个雨量时段起点，每个雨深作用于其后的时段；该约定也由
+  `time_reference` 字段返回；
+- 直接给 `CN` 时不需要无关的 `runoff_coeff`；按 `land_use` 查表时必须显式给出
+  `hsg`、`hydrologic_condition`、`amc`，耕作地还需 `treatment`；
+- CN 路径必须给 `tc`、`tp`，或同时给 Kirpich 的 `L` 与 `slope`。Kirpich 超出
+  原始 1.25–112 acre 样本范围时默认失败关闭；
+- `peak_flow` 是本场过程线实际洪峰，`Qp` 仍表示 10 mm 单位净雨的理论峰值。
+
 ## 科学边界
 
-这是研究/示例用途的参考实现，不是经过率定、独立复核或工程审查的设计软件。
-当前代码中的经验参数、Kirpich 汇流时间单位约定、单位线形状、洪峰缩放和体积
-换算都需要使用者结合原始资料核验。仓库不附带真实流域数据，也不宣称现场校准、
-专业验收或设计许可。请勿把示例输出直接用于防洪设计、调度或安全决策。
+这是研究/示例用途的参考实现，不是经过流域率定、独立工程复核或主管部门审查的
+设计软件。标准单位线已改为直接插值 USDA NRCS NEH-630 第 16 章表 16-1；
+`lag=0.6Tc`、`ΔD=0.133Tc`、`Tp=ΔD/2+lag` 与 PRF=484 峰值换算均有官方
+基准测试。代码还会检查非负/有限输入、ΔD 与输出采样网格、完整退水和离散质量平衡。
 
-本次发布前只修复了两个不改变核心方程的可运行性问题：默认计算时段与
-`SKILL.md` 的 `Δt = 0.133 × tp` 保持一致，以及使用 NumPy 安全地定位洪峰；
-这不等于数值方法已经完成科学验证。输入、单位、守恒和敏感性仍需独立检查。
+这些软件证据仍不等于现场适用性。CN 表基于 `Ia=0.2S`；若显式改用 `λ=0.05`，
+必须联合重新率定 CN 与 λ。中国补充值、常数径流系数路径和面积估算 Tc 都是明确
+标注的工程假设。仓库不附带真实流域数据，也不宣称现场校准、专业验收或设计许可。
+请勿把示例输出直接用于防洪设计、调度或安全决策。
 
 ## 验证状态
 
-当前 CI/本地测试仅覆盖语法、函数接口、有限值和示例 smoke test。没有官方基准、
-专业实测数据或独立率定结果，因此验证等级是“有限 smoke/numerical validation”，
-不是专业水文验证。
+当前测试覆盖 NRCS 表 16-1 全部纵坐标、NEH-630 第 16 章 Example 16-1、
+Tc/lag/ΔD/Tp 关系、SCS-CN 公式、雨强到雨深换算、按 ΔD 平移单位线、相容网格
+失败关闭、完整退水、质量守恒和异常输入。验证等级为“官方解析基准 + 软件数值
+验证”；没有真实流域过程数据、参数率定或独立专业审查，因此不是专业水文验证。
 
 ## 贡献与安全
 

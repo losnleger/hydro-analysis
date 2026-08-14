@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hydro Analysis"
+  short_description: "面向 Agent 的严谨降雨径流与 NRCS 单位线分析"
+  default_prompt: "Use $hydro-analysis to validate inputs and compute a traceable NRCS rainfall-runoff hydrograph."

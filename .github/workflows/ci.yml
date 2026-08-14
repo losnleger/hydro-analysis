@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v5
@@ -23,3 +23,16 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m py_compile scripts/scs_unit_hydrograph.py
       - run: python -m pytest -q
+
+  windows-smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m py_compile scripts/scs_unit_hydrograph.py
+      - run: python -m pytest -q
+      - run: python scripts/scs_unit_hydrograph.py
