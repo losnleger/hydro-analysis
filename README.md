@@ -1,12 +1,9 @@
-# hydro-analysis v0.2.0（无源码分发版）
+# hydro-analysis v0.2.0
 
 面向 WorkBuddy 等 Agent 的中文水文分析技能：降雨—径流分析（SCS-CN +
 NRCS PRF=484 单位线）、基流、Muskingum 河道汇流、水库调洪（Modified
 Puls），以及 PNG / HTML(ECharts) / Excel / Word 四件套报告输出。
 
-> **本包为字节码分发（bytecode-only）**：`scripts/` 内为 `.pyc`，不含
-> `.py` 源码。使用与再分发见 [LICENSE](LICENSE)。
-> `.pyc` 是与解释器版本绑定的字节码分发形式，不是密码学加密；不得逆向的
 > 授权限制以包内 LICENSE 为准。
 
 ## 环境要求
