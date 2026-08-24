@@ -21,6 +21,8 @@ linear reservoir、lag-and-K、Muskingum，以及试算法、Modified Puls 和�
 使用 `scripts/full_chain.pyc` 可运行完整链条，并随包提供 PNG / HTML(ECharts) /
 Excel / Word 四件套报告生成器。模型推荐只表示在当前数据与适用性约束下的候选
 优先级，不表示唯一最优模型；没有实测过程线时不得按拟合优度宣称“最佳”。
+在 Windows 或其他非 UTF-8 控制台运行命令行时使用 `python -X utf8`，避免中文
+帮助与报告状态信息因控制台编码失败。
 
 ## 使用场景
 

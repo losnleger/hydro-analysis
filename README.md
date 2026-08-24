@@ -33,10 +33,10 @@ pip install -r requirements.txt
 
 ```bash
 # 内置演示算例（A=84km², CN=72, Tc=100min 完整五步链条）
-python scripts/full_chain.pyc --demo --out outputs
+python -X utf8 scripts/full_chain.pyc --demo --out outputs
 
 # 自定义算例（JSON 配置，字段见 SKILL.md / scripts/full_chain.pyc --help）
-python scripts/full_chain.pyc --config my_case.json --out outputs
+python -X utf8 scripts/full_chain.pyc --config my_case.json --out outputs
 ```
 
 输出（四件套 + 数据层）：

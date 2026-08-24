@@ -10,6 +10,8 @@
 - Bytecode-only distribution compatibility:
   - corrected source-fallback paths in the legacy facade, report CLI, chart loader, and
     recommender so they target the distributed `.pyc` modules instead of absent `.py` files;
+  - CI and documented CLI examples enable Python UTF-8 mode so Chinese help text also works
+    on non-CJK Windows runners;
   - the relocation-only patch leaves the 70-key full-chain JSON numerically identical and
     passes 40 retained public regressions plus 4 v0.2.0 release-contract tests under
     CPython 3.13.11.

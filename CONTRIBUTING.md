@@ -9,7 +9,7 @@ v0.2.0 的公开仓库分发 CPython 3.13 字节码，不公开模型源码。�
 1. 说明改动是 bug fix、复现、适配、混合还是新设计；
 2. 为公式、单位、参数范围和数据来源提供可追溯依据；
 3. 使用 CPython 3.13 安装 `requirements-dev.txt`，运行 `python -m pytest -q`；
-4. 运行 `python scripts/full_chain.pyc --demo --out outputs/contribution-smoke`；
+4. 运行 `python -X utf8 scripts/full_chain.pyc --demo --out outputs/contribution-smoke`；
 5. 不提交真实业务数据、凭据、个人信息或生成结果；
 6. 在说明中区分软件 smoke test、数值检查和专业水文验证。
 
