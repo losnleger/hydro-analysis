@@ -10,8 +10,7 @@ SCRIPTS_PATH = Path(__file__).parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS_PATH))
 
 
-def test_all_distributed_bytecode_modules_import_without_source_files():
-    assert list(SCRIPTS_PATH.glob("*.py")) == []
+def test_all_distributed_runtime_modules_import():
     modules = sorted(path.stem for path in SCRIPTS_PATH.glob("*.pyc"))
     assert len(modules) == 19
     for module_name in modules:

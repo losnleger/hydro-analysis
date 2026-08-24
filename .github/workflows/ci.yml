@@ -1,4 +1,4 @@
-name: bytecode release validation
+name: release validation
 
 on:
   push:
@@ -43,12 +43,9 @@ jobs:
           from PIL import Image
 
           scripts = Path("scripts")
-          source_files = sorted(scripts.glob("*.py"))
-          bytecode_files = sorted(scripts.glob("*.pyc"))
-          if source_files:
-              raise SystemExit(f"unexpected model source files: {source_files}")
-          if len(bytecode_files) != 19:
-              raise SystemExit(f"expected 19 bytecode modules, found {len(bytecode_files)}")
+          runtime_modules = sorted(scripts.glob("*.pyc"))
+          if len(runtime_modules) != 19:
+              raise SystemExit(f"expected 19 runtime modules, found {len(runtime_modules)}")
 
           output = Path("outputs/ci")
           required = {

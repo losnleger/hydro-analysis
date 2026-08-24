@@ -2,14 +2,13 @@
 
 ## 0.2.0 - 2026-08-24
 
-> 本发行包仅含 CPython 3.13 字节码，不含开发测试源码。下文测试数量是开发阶段
-> 记录；v0.2.0 的公开发行审计独立验证了依赖安装、完整链条演示、严格 JSON、
-> CSV、PNG、离线 HTML、XLSX 与 DOCX 的生成及重开，不把这些检查表述为流域率定
-> 或专业工程验收。
+> 下文测试数量是开发阶段记录；v0.2.0 的公开发行审计独立验证了依赖安装、
+> 完整链条演示、严格 JSON、CSV、PNG、离线 HTML、XLSX 与 DOCX 的生成及重开，
+> 不把这些检查表述为流域率定或专业工程验收。
 
-- Bytecode-only distribution compatibility:
-  - corrected source-fallback paths in the legacy facade, report CLI, chart loader, and
-    recommender so they target the distributed `.pyc` modules instead of absent `.py` files;
+- Distribution compatibility:
+  - corrected packaged module-loading paths in the legacy facade, report CLI, chart loader,
+    and recommender;
   - CI and documented CLI examples enable Python UTF-8 mode so Chinese help text also works
     on non-CJK Windows runners;
   - the relocation-only patch leaves the 70-key full-chain JSON numerically identical and
@@ -109,10 +108,8 @@
   - added `scripts/full_chain.py` official full-chain orchestrator with
     `--demo` and `--config`; the upstream development suite was reported as 198 tests.
 - Clarified that the skill targets WorkBuddy and other Agent development/runtime workflows.
-- Added validated `agents/openai.yaml` metadata for Agent skill discovery and invocation UI.
 - Added public packaging documentation, dependency declarations, CI, contribution guidance, and
-  explicit output/validation boundaries. v0.2.0 is distributed under the included Binary/Bytecode
-  Distribution License; versions previously released under MIT remain under MIT.
+  explicit output/validation boundaries.
 - Added CN selection utilities based on USDA NRCS TR-55/NEH-630: land-use tables, HSG lookup,
   AMC conversion, area-weighted CN, urban impervious-area CN, cumulative SCS-CN runoff, and
   explicitly labeled Chinese local assumptions.

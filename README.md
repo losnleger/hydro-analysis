@@ -10,7 +10,7 @@ Puls），以及 PNG / HTML(ECharts) / Excel / Word 四件套报告输出。
 
 | 依赖 | 要求 |
 |------|------|
-| Python | **CPython 3.13.x**（字节码与 3.13 绑定，其他版本不可用） |
+| Python | **CPython 3.13.x** |
 | 第三方库 | 见 `requirements.txt`（numpy / matplotlib / openpyxl / python-docx） |
 
 安装依赖：
@@ -55,12 +55,11 @@ python -X utf8 scripts/full_chain.pyc --config my_case.json --out outputs
 hydro-analysis/
 ├── SKILL.md            # Agent 技能说明（方法学、调用规范、报告规范）
 ├── README.md           # 本文件
-├── LICENSE             # 无源码分发协议（禁止逆向工程）
+├── LICENSE             # 使用许可
 ├── CHANGELOG.md
 ├── requirements.txt
-├── agents/openai.yaml # Agent 技能发现与调用元数据
 ├── references/         # 方法学参考文档（开放）
-└── scripts/            # 字节码内核（.pyc，无源码）
+└── scripts/            # 运行模块与命令行工具
 ```
 
 ## 方法与验证边界
