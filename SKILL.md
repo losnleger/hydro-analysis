@@ -1,6 +1,6 @@
 ---
 name: hydro-analysis
-description: 面向 WorkBuddy 等 Agent 开发与运行的水文分析 skill。用于有证据边界的降雨-径流推算、SCS-CN 产流、NRCS PRF=484 单位线计算，以及水文可视化和报告规范。当用户提到"洪水过程线"、"降雨径流"、"SCS单位线"、"水文分析"、"汇流计算"时使用此技能。
+description: 面向 WorkBuddy 等 Agent 开发与运行的水文分析 skill。用于有证据边界的降雨-径流推算、SCS-CN/Green-Ampt/Horton 产流、NRCS 单位线、基流、河道与水库汇流、多模型场景筛选，以及水文可视化和报告输出。当用户提到“洪水过程线”“降雨径流”“产流模型”“单位线”“Muskingum”“水库调洪”“水文分析”或“汇流计算”时使用此技能。
 ---
 
 # 面向 Agent 的水文分析专业技能 (Hydro-Analysis Skill)
@@ -9,12 +9,18 @@ description: 面向 WorkBuddy 等 Agent 开发与运行的水文分析 skill。�
 
 这是一个面向 WorkBuddy 等 Agent 开发与运行的 skill，用于描述和复用水文分析工作流，包括：
 
-- 降雨-径流过程计算（SCS-CN + NRCS PRF=484 单位线）；
+- 降雨损失/产流计算（SCS-CN、Green-Ampt、Horton）；
+- 单位线与转换（NRCS PRF=100–600、S 曲线任意历时转换）；
+- 基流、河道汇流与水库调洪；
+- 场景适用性筛选、候选模型组合与实测指标比较；
 - 专业水文可视化图表规范；
 - Word、Excel、HTML 报告结构规范。
 
-当前开源仓库随附参考计算脚本和专业静态 PNG 图表生成器；Word、Excel 和
-HTML 生成器尚未随包提供。请以仓库 README 中的能力边界和验证说明为准。
+计算内核提供分层的产流、转换、基流、河道汇流与水库调洪链条，支持 lag、
+linear reservoir、lag-and-K、Muskingum，以及试算法、Modified Puls 和半图解法。
+使用 `scripts/full_chain.pyc` 可运行完整链条，并随包提供 PNG / HTML(ECharts) /
+Excel / Word 四件套报告生成器。模型推荐只表示在当前数据与适用性约束下的候选
+优先级，不表示唯一最优模型；没有实测过程线时不得按拟合优度宣称“最佳”。
 
 ## 使用场景
 
@@ -353,19 +359,19 @@ SCS-CN 专业产流。
 
 ### 步骤5：生成可视化图表
 
-静态图优先调用 `scripts/generate_chart.py` 的
+静态图优先调用 `scripts/generate_chart.pyc` 中的
 `generate_precipitation_runoff_chart()`；它内部先执行
 `prepare_precipitation_runoff_plot_data()` 并遵循上述强制契约。宿主 Agent
 生成 HTML 时也必须复用同一数据契约和 `references/visualization_standards.md`
 验收清单：
 
 - 静态 PNG（仓库已提供，打印默认 300 dpi）
-- 交互式 HTML（仅规范，当前无生成器）
+- 交互式 HTML（已提供本地 ECharts 版本，并保留离线 SVG 回退）
 
 ### 步骤6：输出完整报告
 
-当前仓库只定义报告结构、没有 Word/Excel 生成脚本。宿主 Agent 具备相应工具时，
-可按规范生成报告，包含：
+完整链条统一使用 `scripts/full_chain.pyc`；已有结果可使用
+`scripts/export_report.pyc` 导出。生成器会输出：
 
 - 参数表格
 - 数据表格
@@ -395,13 +401,14 @@ SCS-CN 专业产流。
 
 详见 `scripts/` 目录下的参考脚本：
 
-- `scs_unit_hydrograph.py`: SCS单位线法计算核心
+- `scs_unit_hydrograph.pyc`: SCS单位线法计算核心
 - `prepare_precipitation_runoff_plot_data()`: 统一雨量单位、ΔD 时段中心、柱宽和流量时轴的绘图数据契约
-- `generate_chart.py`: 已验证的专业倒置雨量—径流静态 PNG 生成器
+- `generate_chart.pyc`: 已验证的专业倒置雨量—径流静态 PNG 生成器
 - `references/scientific_method.md`: 官方来源、公式映射、输入单位、失败关闭规则与验证边界
 
-`generate_report.py` 以及 HTML、Word、Excel 导出器当前尚未实现；
-`references/visualization_standards.md` 同时约束已提供 PNG 和宿主 Agent 的其他输出。
+- `full_chain.pyc`: 完整链条编排入口（产流→单位线→基流→河道→水库 + 四件套报告）
+- `exporters.pyc` / `build_four_piece.pyc`: HTML(ECharts)/Excel/Word/PNG 报告导出器（已提供）
+- `references/visualization_standards.md` 同时约束已提供 PNG 和宿主 Agent 的其他输出。
 
 ## 更新记录
 

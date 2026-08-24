@@ -1,4 +1,4 @@
-name: tests
+name: bytecode release validation
 
 on:
   push:
@@ -8,32 +8,71 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  validate:
+    name: CPython 3.13 / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-      - run: python -m pip install -r requirements-dev.txt
-      - run: python -m py_compile scripts/scs_unit_hydrograph.py scripts/generate_chart.py
-      - run: python -m pytest -q
-
-  windows-smoke:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
       - run: python -m pip install -r requirements-dev.txt
-      - run: python -m py_compile scripts/scs_unit_hydrograph.py scripts/generate_chart.py
+      - run: python -m pip check
       - run: python -m pytest -q
-      - run: python scripts/scs_unit_hydrograph.py
-      - run: python scripts/generate_chart.py --output outputs/ci_hydrograph.png --dpi 96
+      - run: python scripts/full_chain.pyc --help
+      - run: python scripts/full_chain.pyc --demo --out outputs/ci
+      - name: Reopen generated artifacts
+        shell: "python {0}"
+        run: |
+          import json
+          from pathlib import Path
+
+          from docx import Document
+          from openpyxl import load_workbook
+          from PIL import Image
+
+          scripts = Path("scripts")
+          source_files = sorted(scripts.glob("*.py"))
+          bytecode_files = sorted(scripts.glob("*.pyc"))
+          if source_files:
+              raise SystemExit(f"unexpected model source files: {source_files}")
+          if len(bytecode_files) != 19:
+              raise SystemExit(f"expected 19 bytecode modules, found {len(bytecode_files)}")
+
+          output = Path("outputs/ci")
+          required = {
+              "full_chain_chart.png",
+              "full_chain_chart.html",
+              "full_chain_data.xlsx",
+              "full_chain_report.docx",
+              "full_chain_full.json",
+              "full_chain_summary.json",
+              "manifest.json",
+          }
+          missing = sorted(name for name in required if not (output / name).is_file())
+          if missing:
+              raise SystemExit(f"missing release outputs: {missing}")
+
+          def reject_constant(value):
+              raise ValueError(f"non-finite JSON constant: {value}")
+
+          for name in ("full_chain_full.json", "full_chain_summary.json", "manifest.json"):
+              json.loads(
+                  (output / name).read_text(encoding="utf-8"),
+                  parse_constant=reject_constant,
+              )
+
+          workbook = load_workbook(output / "full_chain_data.xlsx", read_only=True)
+          workbook.close()
+          Document(output / "full_chain_report.docx")
+          with Image.open(output / "full_chain_chart.png") as chart:
+              chart.verify()

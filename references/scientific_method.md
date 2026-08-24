@@ -68,6 +68,31 @@
 | Routing | `analyze_flood_hydrograph()`, `convolve_rainfall_runoff()` | net-depth increments occur every ΔD; the ΔD-duration UH is sampled at `dt` and shifted by ΔD |
 | Plot-data mapping | `prepare_precipitation_runoff_plot_data()` | total/net rain share ΔD and units; bars use interval centers; flow preserves `time_h` and calculated peak |
 | Mass balance | `analyze_flood_hydrograph()` | `Σq Δt = ΣPe A`; relative error must be `<=1e-10` |
+| Result schema | result dict `schema_version=1.1.0` | explicit-unit aliases, event totals, recession termination, and `cn_provenance`; legacy keys unchanged |
+| JSON export | `result_to_jsonable()`, `result_to_json()` | numpy arrays/scalars become Python types; NaN/Inf rejected by default |
+| Input contract | `analyze_flood_hydrograph()` kwargs whitelist | unknown parameters fail closed; boolean flags accept only `bool` |
+| Layered pipeline | `pipeline.validate_config()`, `pipeline.simulate_event()` | config schema `1.0`; loss/transform/baseflow/reach_routing/reservoir layers with method/parameter whitelists |
+| Legacy facade | `analyze_flood_hydrograph()` | maps old kwargs to layered config and calls `simulate_event()`; frozen baselines enforce field-level numerical equivalence |
+| Scenario schema | `scenario.validate_scenario()` | scenario schema `1.0`; strict validation and normalization only, no model recommendation yet |
+| Green-Ampt loss | `loss_methods.run_green_ampt()` | event model; `f=Ks(ψΔθ/F+1)`, ponding point `Fp=Ks·ψΔθ/(i-Ks)`, implicit cumulative-infiltration equation solved by bounded bisection |
+| Horton loss | `loss_methods.run_horton()` | `f=fc+(f0-fc)e^(-kt)`; per-ΔD analytic potential integral; no recovery between events |
+| Parameter priors | `loss_parameters.get_green_ampt_preset()`, `get_horton_preset()` | literature defaults with source/evidence/`requires_calibration`; not field-calibrated values |
+| Reach routing | `routing_methods.run_lag()`, `run_linear_reservoir()`, `run_lag_and_k()`, `run_muskingum()` | pure translation, linear reservoir, cascade, standard three-coefficient Muskingum with stability checks and volume balance |
+| Baseflow | `baseflow_methods.run_baseflow()` | `none` or `specified` constant/series; added after transform and before reach routing |
+| Observed metrics | `performance.evaluate_hydrograph()` | NSE, PBIAS, peak/volume relative error, peak-time error, RMSE; simulated values interpolated to observed times, overlap only |
+| S-curve duration conversion | `uh_tools.unit_hydrograph_for_duration()` | `UH_new=(D1/D2)[S(t)-S(t-D2)]`; volume conservation and negative-oscillation diagnostics |
+| Velocity method Tc | `tc_methods.calculate_tc_velocity()` | NEH-630 Subpart F eq. 630.15-8 (sheet), fig. 630F-7 (shallow), eq. 630.15-10 (channel) |
+| AMC/HSG helpers | `cn_helpers.classify_amc()`, `classify_hsg()` | TR-55 antecedent rainfall classes; NEH-630 Table 7-1 HSG decision incl. A/D, B/D, C/D |
+| PRF 100-600 UH | `nrcs_prf_tables.generate_unit_hydrograph_prf()` | verbatim NEH-630 Chapter 16 Appendix 16B tables; PRF>=400 dt/Tp=0.1, PRF<=350 dt/Tp=0.2 |
+| Reservoir routing | `reservoir_methods.route_reservoir()` | level-pool continuity `(I1+I2)/2·Δt-(O1+O2)/2·Δt=S2-S1`; trial, Modified Puls `N=S/Δt+O/2`, semi-graphical work table |
+| Model recommendation | `recommender.recommend_models()` | physical/data/evidence screening, candidate isolation, applicability ranking, multi-model envelope; observed metrics only when independent observations are supplied |
+| Reservoir unit contract | `reservoir_methods.route_reservoir()` | low-level time/dt in **seconds**; pipeline config uses hours and converts automatically |
+| Routing grid contract | `routing_methods.resample_flow_volume_conserving()`, `auto_subreaches` | independent `routing_dt_h` uses volume-conserving linear interpolation; native fine `dt` handled by auto subreach splitting |
+| Four-piece exports | `exporters.write_xlsx()`, `write_docx()`, `write_result_png()` | DOCX/XLSX/PNG joined into `export_report_package()` with HTML/JSON/CSV |
+| JSON export | `exporters.write_result_json()`, `write_summary_json()` | UTF-8, indented, `allow_nan=False`, round-trip safe |
+| CSV export | `exporters.write_rainfall_csv()`, `write_hydrograph_csv()`, `write_series_long_csv()`, `write_summary_csv()` | rainfall and flow retain their own time grids; UTF-8 BOM for Excel compatibility |
+| HTML report | `exporters.generate_report_html()` | standalone offline HTML, inline SVG obeying the inverted-rain/nested-net-rain/continuous-flow plotting contract |
+| Output package | `exporters.export_report_package()`, `scripts/export_report.pyc` | full JSON + summary JSON + CSVs + HTML + manifest |
 
 The published table is rounded. Its trapezoidal integral is about `1.33595`, so a dimensional
 curve that preserves the tabulated shape and exact discrete runoff volume has a peak about 0.2%

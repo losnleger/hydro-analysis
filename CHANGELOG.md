@@ -1,11 +1,116 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-08-24
 
+> 本发行包仅含 CPython 3.13 字节码，不含开发测试源码。下文测试数量是开发阶段
+> 记录；v0.2.0 的公开发行审计独立验证了依赖安装、完整链条演示、严格 JSON、
+> CSV、PNG、离线 HTML、XLSX 与 DOCX 的生成及重开，不把这些检查表述为流域率定
+> 或专业工程验收。
+
+- Bytecode-only distribution compatibility:
+  - corrected source-fallback paths in the legacy facade, report CLI, chart loader, and
+    recommender so they target the distributed `.pyc` modules instead of absent `.py` files;
+  - the relocation-only patch leaves the 70-key full-chain JSON numerically identical and
+    passes 40 retained public regressions plus 4 v0.2.0 release-contract tests under
+    CPython 3.13.11.
+
+- Phase 1 agent-callability hardening:
+  - unknown `analyze_flood_hydrograph()` kwargs now fail closed instead of being silently ignored;
+  - `allow_kirpich_extrapolation` and `crop_residue` now accept only real booleans, rejecting
+    strings and numbers that were previously treated as truthy;
+  - added `result_to_jsonable()` / `result_to_json()` with numpy-to-Python conversion and
+    `allow_nan=False` defaults;
+  - added result schema `1.1.0` with explicit-unit fields (`tc_min`, `watershed_lag_h`, `tp_h`,
+    `recession_duration_h`, `recession_end_time_h`, `recession_criterion`), event totals
+    (`total_rainfall_depth_mm`, `total_excess_depth_mm`, `event_runoff_coefficient`), CN-only
+    `S_mm`/`Ia_mm`, and structured `cn_provenance`;
+  - existing legal calls keep their previous numerical results and legacy field names.
+- Phase 2 modular pipeline:
+  - added `scripts/pipeline.py` with layered config schema `1.0`
+    (`loss -> transform -> baseflow -> reach_routing -> reservoir`), strict method/parameter
+    whitelists, and explicit `not_implemented` failures for future methods;
+  - added `simulate_event()` unified pipeline and per-layer `layer_outputs` traceability;
+  - converted `analyze_flood_hydrograph()` into a legacy facade that maps old kwargs to the
+    pipeline while preserving the old signature, fields, numerical results, and error behavior;
+  - added `scripts/scenario.py` with scenario description schema `1.0` and
+    `validate_scenario(strict=True/False)` for later model recommendation;
+  - added frozen equivalence baselines and config/scenario tests.
+- Phase 3 output closure:
+  - added `scripts/exporters.py` with JSON, grid-separated CSV, summary/long-format CSV,
+    and a standalone offline HTML report (inline SVG, no CDN/external scripts);
+  - added `export_report_package()` producing full/summary JSON, rainfall/hydrograph CSV,
+    long CSV, summary CSV, HTML, and manifest;
+  - added `scripts/export_report.py` CLI with `--result` and `--demo` modes;
+  - added exporter tests including JSON round-trip, CSV precision, HTML independence,
+    package manifest, and CLI smoke.
+- Phase 4 alternative loss models:
+  - added `scripts/loss_methods.py` with event-scale Green-Ampt (ponding time, implicit
+    infiltration equation, impervious fraction) and Horton (analytic potential integral,
+    impervious fraction) models;
+  - added `scripts/loss_parameters.py` with soil-texture Green-Ampt priors
+    (Rawls et al. 1983) and a SWMM-typical Horton preset, each carrying source,
+    evidence level, and `requires_calibration`;
+  - extended `pipeline.validate_config()` / `simulate_event()` with
+    `loss.method = green_ampt | horton`, parameter whitelists, presets, provenance,
+    and mass-balance checks; legacy API remains unchanged;
+  - added analytic cross-validation, mass-balance, preset, and export tests.
+- Phase 5 routing, baseflow, and observed metrics:
+  - added `scripts/routing_methods.py` with volume-conserving `lag`,
+    `linear_reservoir`, `lag_and_k`, and `muskingum` (X range, stability bounds,
+    subreaches);
+  - added `scripts/baseflow_methods.py` with `none` and `specified`
+    constant/series baseflow;
+  - added `scripts/performance.py` with NSE, PBIAS, peak/volume relative errors,
+    peak-time error, and RMSE on overlapping observed time series;
+  - extended pipeline config/execution for `baseflow` and `reach_routing`,
+    added `direct_runoff_m3_s/baseflow_m3_s/routed_flow_m3_s` and optional
+    `observed` comparison in results and HTML reports;
+  - default five-layer `none` chain remains numerically identical to the legacy
+    engine.
+- Phase 6 NRCS method family expansion:
+  - added `scripts/uh_tools.py` S-curve duration conversion with volume
+    conservation, fractional-duration interpolation, and oscillation diagnostics;
+  - added `scripts/tc_methods.py` Subpart F velocity method for
+    sheet / shallow-concentrated / channel segments, with the official example
+    as an analytical baseline;
+  - added `scripts/cn_helpers.py` with AMC classification and NEH-630 Table 7-1
+    HSG decision logic including dual HSG classes;
+  - added `scripts/nrcs_prf_tables.py` with verbatim Appendix 16B ordinates for
+    PRF 100-600 and `generate_unit_hydrograph_prf()`;
+  - extended pipeline config with `nrcs_uh_prf`, `tc_method=velocity`,
+    area-weighted and urban composite CN, and S-curve arbitrary unit duration.
+- Phase 7 reservoir routing:
+  - added `scripts/reservoir_methods.py` with `trial_level_pool`,
+    `modified_puls`, and `semi_graphical` solvers sharing the level-pool
+    continuity equation;
+  - validated elevation/storage/discharge curves, initial storage/elevation,
+    strict inflow time grid, mass-balance residual, and solver work tables;
+  - extended pipeline `reservoir` layer and results with
+    `reservoir_outflow_m3_s/reservoir_storage_m3/reservoir_elevation_m` and
+    HTML reservoir section;
+  - cross-solver agreement and steady-state analytical tests added.
+- Phase 8 scenario screening and model recommendation:
+  - added `scripts/recommender.py` with rule-based candidate generation,
+    feasibility isolation, applicability/evidence ranking, result envelope,
+    and optional observed-metric ranking;
+  - `recommended_primary` is explicitly documented as the most preferred
+    candidate for the current data, never a unique optimal model;
+  - exporters gained a model-comparison section.
+- Phase 9 WorkBuddy feedback merge and professional fixes:
+  - fixed reservoir routing unit contract: low-level `route_reservoir()` now
+    uses seconds (`dt_s`), pipeline converts hours<->seconds, with a physical
+    magnitude regression test;
+  - added Muskingum/linear-reservoir `auto_subreaches` and volume-conserving
+    `routing_dt_h` resampling for independent routing time grids;
+  - added DOCX/XLSX/PNG to `export_report_package()` and CLI flags;
+  - added optional local-ECharts interactive HTML with offline SVG fallback;
+  - added `scripts/full_chain.py` official full-chain orchestrator with
+    `--demo` and `--config`; the upstream development suite was reported as 198 tests.
 - Clarified that the skill targets WorkBuddy and other Agent development/runtime workflows.
 - Added validated `agents/openai.yaml` metadata for Agent skill discovery and invocation UI.
-- Added open-source packaging documentation, MIT licensing, dependency declarations, CI, contribution
-  guidance, and explicit warnings for unavailable report/chart exporters.
+- Added public packaging documentation, dependency declarations, CI, contribution guidance, and
+  explicit output/validation boundaries. v0.2.0 is distributed under the included Binary/Bytecode
+  Distribution License; versions previously released under MIT remain under MIT.
 - Added CN selection utilities based on USDA NRCS TR-55/NEH-630: land-use tables, HSG lookup,
   AMC conversion, area-weighted CN, urban impervious-area CN, cumulative SCS-CN runoff, and
   explicitly labeled Chinese local assumptions.

@@ -1,17 +1,21 @@
 import importlib.util
 from pathlib import Path
+import sys
 
 import numpy as np
 import pytest
 
 
-MODULE_PATH = Path(__file__).parents[1] / "scripts" / "scs_unit_hydrograph.py"
+SCRIPTS_PATH = Path(__file__).parents[1] / "scripts"
+sys.path.insert(0, str(SCRIPTS_PATH))
+
+MODULE_PATH = SCRIPTS_PATH / "scs_unit_hydrograph.pyc"
 SPEC = importlib.util.spec_from_file_location("scs_unit_hydrograph", MODULE_PATH)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
 
-GENERATOR_PATH = Path(__file__).parents[1] / "scripts" / "generate_chart.py"
+GENERATOR_PATH = SCRIPTS_PATH / "generate_chart.pyc"
 GENERATOR_SPEC = importlib.util.spec_from_file_location("generate_chart", GENERATOR_PATH)
 GENERATOR = importlib.util.module_from_spec(GENERATOR_SPEC)
 assert GENERATOR_SPEC.loader is not None

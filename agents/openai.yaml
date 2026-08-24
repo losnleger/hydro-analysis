@@ -1,4 +1,7 @@
 interface:
   display_name: "Hydro Analysis"
-  short_description: "面向 Agent 的严谨降雨径流与 NRCS 单位线分析"
-  default_prompt: "Use $hydro-analysis to validate inputs and compute a traceable NRCS rainfall-runoff hydrograph."
+  short_description: "面向 Agent 的产流、汇流、调洪与水文报告技能"
+  default_prompt: "Use $hydro-analysis to validate hydrologic inputs, compare applicable model chains, and produce a traceable rainfall-runoff analysis."
+
+policy:
+  allow_implicit_invocation: true
