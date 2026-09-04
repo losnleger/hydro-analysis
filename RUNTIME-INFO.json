@@ -1,0 +1,245 @@
+{
+  "architecture": "x64",
+  "build_tools": {
+    "Cython": "3.2.9",
+    "compiler_family": "Microsoft Visual C++ 2022 x64",
+    "msvc_tools_version": "14.35.32215",
+    "setuptools": "80.9.0",
+    "wheel": "0.45.1"
+  },
+  "core_modules": [
+    "baseflow_methods",
+    "build_four_piece",
+    "cn_helpers",
+    "data_contract",
+    "event_dataset",
+    "exporters",
+    "loss_methods",
+    "loss_parameters",
+    "nrcs_prf_tables",
+    "performance",
+    "pipeline",
+    "recommender",
+    "reservoir_methods",
+    "routing_methods",
+    "runtime_loader",
+    "scenario",
+    "scs_unit_hydrograph",
+    "tc_methods",
+    "uh_tools",
+    "_hydro_event_workflow",
+    "_hydro_export_report",
+    "_hydro_full_chain",
+    "_hydro_generate_chart"
+  ],
+  "edition": "public-native-runtime",
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "DD83FBCB20F0A28443486AC2F405FF387B9D773E8889BE194701C5626BC8EDF0",
+      "size_bytes": 18021
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "A5D66B0597ADE4CB1E38E65A78D7813D6878639188670D11382C84B3FAE2956A",
+      "size_bytes": 1087
+    },
+    {
+      "path": "NOTICE",
+      "sha256": "079929869BC80E85C5E23D96E18EA45EC4AD91BF33393E9DA0D3A4B7FB3CE7AE",
+      "size_bytes": 303
+    },
+    {
+      "path": "README.md",
+      "sha256": "16C636B11306015E7FE04857234436E325CB348A54AD7849FDB783C0261FEC07",
+      "size_bytes": 8239
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "8C294F1C0991B1901F61B62AFFF5FE100F3B58F5AE327D02BF2DFF586840F85E",
+      "size_bytes": 366
+    },
+    {
+      "path": "SKILL.md",
+      "sha256": "43022F5E3E182FEA1EE4E958853942F6AE03F5182751A91A23FAD60CC643C001",
+      "size_bytes": 26563
+    },
+    {
+      "path": "VERSION",
+      "sha256": "511A100EEDFB9EA66441E5D506392DBA2D8AA290F98C4C544C70AE75EC3C3396",
+      "size_bytes": 6
+    },
+    {
+      "path": "references/data_contract.md",
+      "sha256": "E50AFBCD736426937F7C209877921594F2B0AB45BD0F8BEF979988F39E0BF61E",
+      "size_bytes": 7625
+    },
+    {
+      "path": "references/event_workflow.md",
+      "sha256": "6DFEE20AAB6E0C5111E32C30127DDA836E39D382E7C5ABB7AC15FA6AB90DAA8F",
+      "size_bytes": 5450
+    },
+    {
+      "path": "references/scientific_method.md",
+      "sha256": "D30AA78839F19522B1941DD67C55A8A432FFD2719EEDC586ABF05FBD9B936170",
+      "size_bytes": 18079
+    },
+    {
+      "path": "references/visualization_standards.md",
+      "sha256": "C100218CA638E49A81BE4E5931BFA0D7458DA10EF86314491437F9B7278281B0",
+      "size_bytes": 13030
+    },
+    {
+      "path": "requirements.txt",
+      "sha256": "01D85A897BD77D08310D58F3B4D762D21BC5BCF75A6EEEC55E7C2F99E251404A",
+      "size_bytes": 150
+    },
+    {
+      "path": "scripts/_hydro_event_workflow.cp313-win_amd64.pyd",
+      "sha256": "E7FD9A7782072EFFD07EFE0722BBD03784BE2FE26B75209B15E0C04B764BEDA9",
+      "size_bytes": 78336
+    },
+    {
+      "path": "scripts/_hydro_export_report.cp313-win_amd64.pyd",
+      "sha256": "CF3CFD4FF63057B19670422A5F3D07C3D92830BF856FCE405A48BB6146313C1A",
+      "size_bytes": 59904
+    },
+    {
+      "path": "scripts/_hydro_full_chain.cp313-win_amd64.pyd",
+      "sha256": "A59A62CF327E0310F8E75B9EFB01F3FCB13A8BA4067AF6650EF7DA8DAFDAA9F2",
+      "size_bytes": 104960
+    },
+    {
+      "path": "scripts/_hydro_generate_chart.cp313-win_amd64.pyd",
+      "sha256": "2C51D8CA2CAB69760C62E210CB9A681806F54E98E3BA77CADB2541130AFC6F0E",
+      "size_bytes": 90112
+    },
+    {
+      "path": "scripts/_native_entry.py",
+      "sha256": "AAA5E08024A9202F8C13C6E22DE78A6502D1FBC7DDD8864986D0EA0769B1658C",
+      "size_bytes": 1717
+    },
+    {
+      "path": "scripts/baseflow_methods.cp313-win_amd64.pyd",
+      "sha256": "150659204CE43522FD97DE929151606D15B5A521F5A8A656465112C793BBA554",
+      "size_bytes": 51712
+    },
+    {
+      "path": "scripts/build_four_piece.cp313-win_amd64.pyd",
+      "sha256": "31BC187F6B53927E12805E8188A6E4C5B8B352EF5D3AF0F39C6651A957435308",
+      "size_bytes": 251904
+    },
+    {
+      "path": "scripts/cn_helpers.cp313-win_amd64.pyd",
+      "sha256": "576FD213F3C35A435265A06BE502EB5AAD5D660714748AD08C8CA86CECF04D06",
+      "size_bytes": 58880
+    },
+    {
+      "path": "scripts/data_contract.cp313-win_amd64.pyd",
+      "sha256": "714131D420E92E772B9EEC05A9E3DC331636E7122869090209C1B63010B90B1E",
+      "size_bytes": 206336
+    },
+    {
+      "path": "scripts/event_dataset.cp313-win_amd64.pyd",
+      "sha256": "23FFF7DAF0B1FA38650946D99E1A03771C039AD2992F25DCC9C9027C89EB60D3",
+      "size_bytes": 210944
+    },
+    {
+      "path": "scripts/event_workflow.py",
+      "sha256": "639EC16C729C894AF97310634FA0B27075CD68E014BF29355334907900401EA5",
+      "size_bytes": 964
+    },
+    {
+      "path": "scripts/export_report.py",
+      "sha256": "D56000F4F510925425C352B7B3CE7F9F118C02FD723556638599774088FA5473",
+      "size_bytes": 963
+    },
+    {
+      "path": "scripts/exporters.cp313-win_amd64.pyd",
+      "sha256": "EBD4A897D20D59AF306C3AADF65B72C1867BB2D72A309AADADE45D2CBDE0D5EA",
+      "size_bytes": 363520
+    },
+    {
+      "path": "scripts/full_chain.py",
+      "sha256": "193F701B73158575060521E181190441C9AD7951AB009A2EAA11CB85693C40E3",
+      "size_bytes": 960
+    },
+    {
+      "path": "scripts/generate_chart.py",
+      "sha256": "5CA197E79940130F1F9132D9060B5B53FF91B2B6F31064FB28837244259A7E57",
+      "size_bytes": 964
+    },
+    {
+      "path": "scripts/loss_methods.cp313-win_amd64.pyd",
+      "sha256": "AEEC73FF25B4B96C1607F2E245285E49EA9B82A65A06D3709D86951B6501B151",
+      "size_bytes": 92672
+    },
+    {
+      "path": "scripts/loss_parameters.cp313-win_amd64.pyd",
+      "sha256": "B6BD8C855D10B7804EA7B0AE36B18B8265853E9CF062EFB6355EAE45B01FF4D1",
+      "size_bytes": 65024
+    },
+    {
+      "path": "scripts/nrcs_prf_tables.cp313-win_amd64.pyd",
+      "sha256": "DFF6AA431F0C4D00008A892EACD65043538E4A76628212360BDF8138C214C911",
+      "size_bytes": 77824
+    },
+    {
+      "path": "scripts/performance.cp313-win_amd64.pyd",
+      "sha256": "72998C7581EA93DF37BA595D369D3AACE14F24A04339504D8C1ADCBA145C2755",
+      "size_bytes": 120320
+    },
+    {
+      "path": "scripts/pipeline.cp313-win_amd64.pyd",
+      "sha256": "2258DD02FA0F646280D5F9FE189B0C24755D2CD7C0FE6A76B424AD986B8A7E67",
+      "size_bytes": 360448
+    },
+    {
+      "path": "scripts/recommender.cp313-win_amd64.pyd",
+      "sha256": "B947EDDDC2228B3A8025111F35286492C251A927C9ADE55913189C619E028B95",
+      "size_bytes": 125440
+    },
+    {
+      "path": "scripts/reservoir_methods.cp313-win_amd64.pyd",
+      "sha256": "56D862F7B9DA6F875CC2AB3DFFDA4AE511E69B05E2F51DE17A2EB0339B1D6862",
+      "size_bytes": 112640
+    },
+    {
+      "path": "scripts/routing_methods.cp313-win_amd64.pyd",
+      "sha256": "FC80250F69F1D86DC314469B7E1B60F80155776B6D472CD7A11FC56AC0D87897",
+      "size_bytes": 123392
+    },
+    {
+      "path": "scripts/runtime_loader.cp313-win_amd64.pyd",
+      "sha256": "8C0B3950241B54B2A8E9014297B67435EB8DE4BABED4E6BB30FA96CDD8846272",
+      "size_bytes": 109568
+    },
+    {
+      "path": "scripts/scenario.cp313-win_amd64.pyd",
+      "sha256": "0BDA21CAB223DF25012346F220332B1B023260838B66576DDEF7C8408FEAF606",
+      "size_bytes": 84992
+    },
+    {
+      "path": "scripts/scs_unit_hydrograph.cp313-win_amd64.pyd",
+      "sha256": "28FB8D3914DF904EA19B1ECB0F93DA613A208B29B8C3F8EA3B3DC3FBAD0464A3",
+      "size_bytes": 336896
+    },
+    {
+      "path": "scripts/tc_methods.cp313-win_amd64.pyd",
+      "sha256": "9C52D96F6AC2B4C46AD77A4E7F666C32409F090652D9F82C8C5C7E910354E801",
+      "size_bytes": 76800
+    },
+    {
+      "path": "scripts/uh_tools.cp313-win_amd64.pyd",
+      "sha256": "6C720D492F4E2FCD7127D809A8AA72707C607A30454FB8507858C2F837708232",
+      "size_bytes": 61440
+    }
+  ],
+  "package_name": "hydro-analysis",
+  "python_abi": "cp313-win_amd64",
+  "python_implementation": "CPython",
+  "python_version": "3.13.11",
+  "runtime_kind": "native",
+  "schema_version": "1.0",
+  "version": "0.3.2"
+}

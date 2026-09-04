@@ -13,14 +13,23 @@ description: 面向 WorkBuddy 等 Agent 开发与运行的水文分析 skill。�
 - 单位线与转换（NRCS PRF=100–600、S 曲线任意历时转换）；
 - 基流、河道汇流与水库调洪；
 - 场景适用性筛选、候选模型组合与实测指标比较；
+- 显式多事件切分，以及 calibration / validation / blind 数据隔离；
 - 专业水文可视化图表规范；
 - Word、Excel、HTML 报告结构规范。
 
 计算内核提供分层的产流、转换、基流、河道汇流与水库调洪链条，支持 lag、
 linear reservoir、lag-and-K、Muskingum，以及试算法、Modified Puls 和半图解法。
-使用 `scripts/full_chain.pyc` 可运行完整链条，并随包提供 PNG / HTML(ECharts) /
+使用 `scripts/full_chain.py` 可运行完整链条，并随包提供 PNG / 单文件离线 HTML /
 Excel / Word 四件套报告生成器。模型推荐只表示在当前数据与适用性约束下的候选
-优先级，不表示唯一最优模型；没有实测过程线时不得按拟合优度宣称“最佳”。
+优先级，不表示唯一最优模型；单场 NSE/KGE 只能诊断，不得据此改排候选或宣称
+“最佳”。多事件工作流按事件等权汇总，禁止拼接所有点后让长事件支配结果。
+结构化路径要求降雨和实测流量显式声明带时区时间戳、时段语义、单位、逐点质量、
+测站、来源和 QC 接受规则，并把原始/规范化输入 hash 写入结果；缺测、未知字段、
+时间歧义或未接受质量必须失败关闭，不得静默填补或猜测。
+若河道路由指定 `routing_dt_h`，流量、洪量、峰现和退水时标必须全部沿用该
+实际等间隔网格；不得再乘转换层 `dt`。水库缺省继承河道实际步长，显式水库
+`dt_h` 只允许与上游网格一致，不一致时失败关闭，不得静默忽略或自动跨语义
+重采样。
 在 Windows 或其他非 UTF-8 控制台运行命令行时使用 `python -X utf8`，避免中文
 帮助与报告状态信息因控制台编码失败。
 
@@ -213,7 +222,9 @@ qp = 0.208333 × A × Q / Tp
 默认采用水文常用的同窗组合图：时间轴置顶，左轴降雨向下为正，右轴流量向上
 为正。总降雨为蓝色宽柱，净雨为橙色窄柱；两柱使用同一时段中心和同一零线，
 净雨柱仅在水平方向居中覆盖于总雨柱内部，绝不并排、堆叠或从总雨柱底部起画。
-流量过程线使用相同的连续时间坐标，在雨量结束后保留完整退水段。
+流量过程线使用相同的连续时间坐标。事件产流/单位线过程必须在雨量结束后保留
+完整单位线退水段；若后接水库调洪，图表还必须报告调洪计算时域终点的库容和
+下泄。未延算到明确工程终止标准时，不得把上游入流时域终点称为水库完整退水。
 
 #### 数据与时间映射
 
@@ -226,6 +237,10 @@ qp = 0.208333 × A × Q / Tp
 - 流量横坐标：原始 `time_h`，不得按雨量类别索引重采样
 - 必须验证同一 ΔD 内 `0 ≤ 净雨 ≤ 总雨`
 - `time_h=0` 表示首个雨量时段起点；图题或说明中保留这一时标约定
+
+完整链四件套按原始雨量时段展示时，必须先把 ΔD 净雨深聚合到实际
+`dt_rain_h` 并换算为同单位雨强；柱中心和柱宽也使用真实 `dt_rain_h`，禁止
+把 0.5 h、2 h 等输入静默当作 1 h。
 
 #### 几何与视觉规则
 
@@ -243,7 +258,7 @@ qp = 0.208333 × A × Q / Tp
 输出建议 16:9；屏幕不少于 1280×720，打印 PNG 使用 300 dpi。图例应明确
 “总降雨、净雨、流量”，并使用边框/线型保证灰度打印仍可区分。
 
-完整的数据映射、ECharts/Matplotlib 实现要求和验收清单见
+完整的数据映射、内联 SVG/可选本地 ECharts/Matplotlib 实现要求和验收清单见
 `references/visualization_standards.md`。
 
 ### 表格规范
@@ -290,7 +305,7 @@ qp = 0.208333 × A × Q / Tp
    - 建议
 
 6. 降雨-径流可视化图表
-   - 交互式图表说明（HTML文件）
+   - 单文件离线图表说明（HTML文件）
    - 静态图表（PNG，适合打印）
 
 附录：计算方法说明
@@ -304,7 +319,7 @@ qp = 0.208333 × A × Q / Tp
 |---------|--------|------|
 | Word报告 | Flood_Hydrograph_Report.docx | 完整分析报告（含图表） |
 | Excel数据 | Flood_Hydrograph_Report.xlsx | 原始数据+过程线图表 |
-| HTML图表 | precipitation_runoff_chart.html | 交互式可视化 |
+| HTML图表 | precipitation_runoff_chart.html | 内联 SVG 单文件离线可视化 |
 | PNG图片 | precipitation_runoff_chart.png | 静态图表（打印用） |
 
 ## 工作流程
@@ -314,7 +329,15 @@ qp = 0.208333 × A × Q / Tp
 确认以下输入：
 
 - 流域面积 A (km²)
-- 等时段雨强 (mm/h) 及每个输入时段长度 `dt_rain_h` (h)
+- legacy 路径：等时段雨强 (mm/h) 及每个输入时段长度 `dt_rain_h` (h)
+- structured 路径：`rainfall_data` 的带 offset 时间戳、`interval_start` 或
+  `interval_end`、雨强/时段雨深及单位、regular 时段、逐点 quality、station、
+  source 和 QC 接受规则；完整 schema 见 `references/data_contract.md`
+- 多事件任务必须给 `event-dataset 1.0` 的稳定事件 ID、显式 `[start,end)` 边界和
+  `calibration/validation/blind` role；边界对齐、阶段锁及失败规则见
+  `references/event_workflow.md`，不得静默推断 dry-gap 或事件阈值
+- 若输入实测过程线，structured `observed_data` 必须使用绝对时间并与 structured
+  rainfall 对齐；不得混用 structured 降雨与 legacy 相对 `observed.time_h`
 - 当前场次 CN；或土地利用、HSG、水文条件、耕作方式和 AMC 的完整查表条件
 - 经核验的 Tc(min) 或 Tp(h)；仅在符合适用域时才用显式 L+slope 的 Kirpich
 - 若只给 Tp，脚本会用 `ΔD≈0.2Tp` 作工程桥接并标记假设；严格复现
@@ -361,19 +384,21 @@ SCS-CN 专业产流。
 
 ### 步骤5：生成可视化图表
 
-静态图优先调用 `scripts/generate_chart.pyc` 中的
+静态图优先调用 `scripts/generate_chart.py` 中的
 `generate_precipitation_runoff_chart()`；它内部先执行
 `prepare_precipitation_runoff_plot_data()` 并遵循上述强制契约。宿主 Agent
 生成 HTML 时也必须复用同一数据契约和 `references/visualization_standards.md`
 验收清单：
 
 - 静态 PNG（仓库已提供，打印默认 300 dpi）
-- 交互式 HTML（已提供本地 ECharts 版本，并保留离线 SVG 回退）
+- 单文件离线 HTML（默认内联 SVG，不下载或引用 CDN/外部资源）
+- 可选 ECharts 仅接受明确存在的本地 UTF-8 JS 文件并内嵌；URL、网络路径或
+  不存在的文件必须失败关闭
 
 ### 步骤6：输出完整报告
 
-完整链条统一使用 `scripts/full_chain.pyc`；已有结果可使用
-`scripts/export_report.pyc` 导出。生成器会输出：
+完整链条统一使用 `scripts/full_chain.py`；已有结果可使用
+`scripts/export_report.py` 导出。生成器会输出：
 
 - 参数表格
 - 数据表格
@@ -385,7 +410,8 @@ SCS-CN 专业产流。
 1. **可视化关键点**
    - 净雨量柱必须叠在总降雨柱**内部**，不是并排
    - 总雨与净雨必须同单位、同 ΔD、同一时段中心，并从顶部同一零线向下
-   - 单一连续时间轴必须置顶；流量使用原 `time_h` 并保留完整退水
+   - 单一连续时间轴必须置顶；流量使用原 `time_h`；单位线过程保留完整退水，
+     水库过程若仅到输入时域边界则明确终点状态，不虚称完整退水
    - 流量曲线从底部零线向上，默认不得平滑或重算洪峰
 
 2. **报告质量**
@@ -403,17 +429,39 @@ SCS-CN 专业产流。
 
 详见 `scripts/` 目录下的参考脚本：
 
-- `scs_unit_hydrograph.pyc`: SCS单位线法计算核心
+- `scs_unit_hydrograph.py`: SCS单位线法计算核心
+- `data_contract.py`: 严格水文时序 schema、UTC/单位规范化、QC 与输入 hash
+- `event_dataset.py`: 显式多事件切分、三阶段隔离、事件等权指标与阶段锁
+- `event_workflow.py`: prepare / evaluate / lock 严格 JSON 命令行入口
 - `prepare_precipitation_runoff_plot_data()`: 统一雨量单位、ΔD 时段中心、柱宽和流量时轴的绘图数据契约
-- `generate_chart.pyc`: 已验证的专业倒置雨量—径流静态 PNG 生成器
+- `generate_chart.py`: 已验证的专业倒置雨量—径流静态 PNG 生成器
 - `references/scientific_method.md`: 官方来源、公式映射、输入单位、失败关闭规则与验证边界
+- `references/data_contract.md`: 结构化降雨/实测流量字段、单位、时间和 QC 规则
+- `references/event_workflow.md`: v0.3.1 多事件边界、KGE/MAE、阶段锁和验证边界
 
-- `full_chain.pyc`: 完整链条编排入口（产流→单位线→基流→河道→水库 + 四件套报告）
-- `exporters.pyc` / `build_four_piece.pyc`: HTML(ECharts)/Excel/Word/PNG 报告导出器（已提供）
+- `full_chain.py`: 完整链条编排入口（产流→单位线→基流→河道→水库 + 四件套报告）
+- `exporters.py` / `build_four_piece.py`: 单文件离线 HTML/Excel/Word/PNG 报告导出器（已提供）
 - `references/visualization_standards.md` 同时约束已提供 PNG 和宿主 Agent 的其他输出。
 
 ## 更新记录
 
+- 2026-09-02: v0.3.2 时间网格修复——修正独立 `routing_dt_h` 的返回顺序、末
+  时段守恒、下游洪量/洪峰/退水时标和水库实际步长；水库独立 `dt_h` 不一致及
+  外部入流覆盖字段均失败关闭。默认 70/73 字段和多事件冻结结果保持不变，本地
+  候选仅达到 L2 离散守恒与软件回归验证。
+- 2026-09-01: v0.3.1 多事件评价升级——新增显式事件切分、率定/验证/盲测三分区
+  和逐级模型锁；增加 KGE-2009、KGE-2012、MAE 及退化状态。单场指标不得改变
+  物理适用性候选顺序，多事件只做事件等权诊断，不自动率定或选择最佳模型。
+- 2026-09-01: v0.3.0 数据契约升级——新增显式时区/时段、雨深/雨强和流量
+  单位、逐点质量、测站、来源、QC 与输入 hash；缺测、歧义时间和未知字段失败
+  关闭，不插补、不重采样、不猜测时区、不配置通用异常阈值。legacy 70 字段、
+  水文公式和冻结数值不变，本地候选只达到 L2 软件/单位/守恒验证。
+- 2026-09-01: v0.2.3 运行兼容性升级——保持全部水文公式、schema 与数值
+  结果不变，增加 CPython 3.13 Windows x64 干净运行验证、包级署名元数据和
+  私有/公开发布隔离门槛；本地候选不构成 GitHub 发布授权。
+- 2026-08-25: v0.2.2 输出修复——完整链 HTML 改为内联 SVG 单文件离线图，
+  禁止下载或静默写入 CDN；专业图统一为顶部时间轴、左侧倒置降雨轴和右侧
+  流量轴，可选 ECharts 仅允许显式本地资源内嵌。
 - 2026-03-27: 初始版本，包含SCS单位线法、专业可视化标准、完整报告模板
 - 2026-03-27: CN 取值专业化——以 USDA NRCS TR-55 表 2-1/2-2a/2-2b/2-2c/2-2d
   与 NEH-630 第 7/10 章为依据，增加水文土壤组、AMC 分级与换算、分土地利用

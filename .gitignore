@@ -1,6 +1,6 @@
 __pycache__/
-*.py[cod]
-!scripts/*.pyc
+*.pyc
+*.pyo
 *.so
 .Python
 .venv/
@@ -19,5 +19,6 @@ build/
 outputs/
 results/
 hydro-analysis-v*.zip
+hydro-analysis-v*.zip.sha256
 *.tmp
 *.bak

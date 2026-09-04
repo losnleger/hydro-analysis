@@ -30,7 +30,9 @@
 - 左 Y 轴是倒置雨量轴，0 在顶部；右 Y 轴是正常流量轴，0 在底部。
 - 总降雨和净雨从同一个雨量零线起画。所谓“嵌套”仅指水平方向同中心、净雨柱
   更窄且位于上层；不得并排、相加堆叠、垂直居中或从总雨柱底部起画。
-- 流量过程线和雨柱必须使用同一个连续时间坐标范围。雨量结束后仍显示完整退水。
+- 流量过程线和雨柱必须使用同一个连续时间坐标范围。事件产流/单位线过程在雨量
+  结束后仍显示完整单位线退水。水库调洪若只计算到上游入流时域终点，必须同时
+  报告终点库容和下泄，并明确该边界不等同于水库完整退水。
 - 图题必须写真实方法，例如“SCS-CN + NRCS PRF=484”，不得照抄参考图中的
   “Nash Model”等不相符名称。
 
@@ -49,6 +51,11 @@ total_intensity = rainfall_depth_unit_mm / ΔD   [mm/h]
 net_intensity   = net_rainfall_depth_mm / ΔD    [mm/h]
 bar_center      = interval_start + ΔD/2          [h]
 ```
+
+完整链在默认 aligned 模式下可把 ΔD 净雨深守恒聚合回原始等时段雨量网格；当
+`unit_duration_resolution="s_curve"` 且 ΔD 不整除原雨量时段时，必须直接用
+`rainfall_depth_unit_mm / ΔD` 与 `net_rainfall_depth_mm / ΔD` 的共同 ΔD 网格。
+不得把跨越原时段边界的净雨增量武断拆回原雨量时段。
 
 如需画时段雨深，传 `rainfall_display="depth"`，总雨和净雨必须同时使用
 `mm/ΔD`。严禁把输入总雨强 `mm/h` 与净雨深 `mm` 直接叠在同一轴上。
@@ -92,7 +99,11 @@ bar_center      = interval_start + ΔD/2          [h]
 峰现时间、产生峰值过冲或负流量；除非使用形状保持插值并明确标注，否则禁止。
 灰度打印时给总雨柱加浅边框、净雨柱加深边框或纹理，不能只依赖颜色区分。
 
-### 1.5 ECharts 实现骨架
+### 1.5 可选 ECharts 实现骨架
+
+默认 HTML 应使用内联 SVG，保持单文件、可离线重开且不含 CDN 或外部资源。
+若调用方明确选择 ECharts，只允许读取存在的本地 UTF-8 JS 文件并把内容内嵌；
+不得在运行时下载，不得接受 URL、网络路径或把远程地址写入报告。
 
 使用一个共享的 value 型 X 轴；雨柱用 custom 系列，以“小时”为实际宽度：
 
@@ -149,7 +160,8 @@ helper 返回的小时值，流量用 `plot(flow_time_h, flow_m3_s)`，不得另
 - [ ] 总雨和净雨同单位、同 ΔD、同中心，净雨窄柱完整位于总雨宽柱内。
 - [ ] X 轴为连续小时，雨柱位于时段中心，流量使用原 `time_h`。
 - [ ] 流量未被普通平滑改变，洪峰标注等于计算结果。
-- [ ] 完整退水未被雨量序列长度截断。
+- [ ] 单位线退水未被雨量序列长度截断；水库过程若未延算至工程终止标准，已明确
+      终点库容/下泄且未宣称完整退水。
 - [ ] 图题方法、轴单位、图例、时标约定均与本次计算一致。
 - [ ] 灰度打印和 300 dpi 输出仍可辨认。
 
@@ -264,7 +276,7 @@ tbody tr:hover {
 
 | 格式 | 文件名 | 用途 |
 |------|--------|------|
-| HTML | precipitation_runoff_chart.html | 交互式展示 |
+| HTML | precipitation_runoff_chart.html | 内联 SVG 单文件离线展示；本地 ECharts 为显式可选项 |
 | PNG | precipitation_runoff_chart.png | 打印输出（300dpi） |
 | DOCX | Flood_Hydrograph_Report.docx | 完整报告 |
 | XLSX | Flood_Hydrograph_Report.xlsx | 数据存档 |

@@ -1,5 +1,105 @@
 # Changelog
 
+## Unreleased
+
+## 0.3.2 - 2026-09-04
+
+- Fixed the explicit `routing_dt_h` path so `(target_time, target_flow)` is consumed in the declared
+  order; equal-step resampling is an exact pass-through and no longer risks treating time as flow.
+- Aligned conservative flow resampling with the established interval-start `sum(Q) * dt` volume
+  contract, retaining the final source interval and zero-filling only a partial target overhang.
+- Propagated the actual routed grid through routed/reservoir volume, reservoir solver timestep,
+  peak time, rise time, recession end, and recession duration calculations.
+- Made an explicit reservoir `dt_h` a fail-closed consistency assertion against the upstream grid;
+  removed reservoir inflow override fields that the layered pipeline previously accepted but ignored.
+- Kept the hydrologic equations, pipeline/result schemas, default 70/73-field canonical outputs, and
+  multi-event baseline unchanged. Validation is limited to L2 synthetic grid/conservation and runtime
+  equivalence checks, not basin calibration or engineering review.
+
+## 0.3.1 - 2026-09-01
+
+- Added strict explicit multi-event datasets with stable event IDs, UTC-offset `[start,end)`
+  boundaries aligned to precipitation interval edges, and non-empty calibration, validation, and
+  blind partitions. Positive rainfall outside all events fails closed; zero-rain gaps are counted.
+- Added auditable stage locks: validation requires a calibration run identity, blind requires a
+  validation run identity, and dataset/split/config/area mismatches fail closed. These hashes guard
+  workflow misuse; they are not signatures or access control.
+- Added KGE-2009, KGE-2012, and MAE on the existing overlap/alignment contract. Exact zero means or
+  variability return `None` with explicit status rather than NaN, Inf, or an invented epsilon.
+- Added equal-weight per-event macro mean/median/min/max without concatenating event time series.
+  No calibration optimizer or automatic best-model selector is introduced.
+- Corrected the recommender so single-event NSE/KGE diagnostics cannot reorder physically ranked
+  candidates; reports now label the output as a physical-applicability candidate, not a best model.
+- Kept the pipeline schema, legacy 70-field result and hydrologic formula baseline unchanged. This
+  release is limited to L2 formula/schema/conservation checks, not real-basin split-sample
+  validation or engineering acceptance.
+
+## 0.3.0 - 2026-09-01
+
+- Added a strict structured hydrologic time-series contract for precipitation and observed
+  discharge, with explicit offset-aware timestamps, interval reference, units, point quality,
+  station/source metadata, QC policy, and canonical input hashes.
+- Added exact normalization for supported rainfall intensity/depth and discharge units. Missing,
+  non-finite or negative values, unknown fields, ambiguous/duplicate/reversed/irregular rainfall
+  times, unaccepted quality classes, and explicit bound violations now fail closed; no imputation,
+  resampling, timezone guessing, or default anomaly threshold is performed.
+- Integrated structured rainfall/observed inputs into the pipeline and full-chain CLI while keeping
+  the legacy positional input contract, 70-field result schema `1.1.0`, hydrologic formulas, and
+  frozen numerical result unchanged. Structured runs use result schema `1.2.0` and add only data
+  contract version, input hash, and normalized provenance.
+- Made high-level JSON loading reject duplicate/non-finite values and unknown keys, restored
+  scenario forwarding, and added input/file SHA-256 provenance to report summaries and output
+  manifest schema `1.1`.
+- Closed two report-callability gaps: advertised CLIs now run under isolated `python -I`, and the
+  four-piece report displays arbitrary-duration S-curve runs on their actual common Delta-D
+  total/net rainfall grid instead of failing or inventing a rebinning to source intervals.
+- Made full-chain reporting method-aware: unsupported combinations use the generic professional
+  four-piece instead of Muskingum/Modified-Puls labels, while the specialized reservoir report
+  records its terminal storage/outflow and does not call an inflow-horizon boundary complete
+  reservoir recession.
+- Added unit, time-zone, interval, QC, provenance, JSON, runtime-equivalence, deterministic-package,
+  and clean-extract regressions. This is an L2 software/units/conservation release, not measured-data
+  certification, basin calibration, or engineering acceptance.
+
+## 0.2.3 - 2026-09-01
+
+- Replaced fixed sibling `*.py` execution with one fail-closed canonical module loader that works
+  with the declared CPython 3.13 source or Windows x64 native runtime layout and prevents silent
+  fallback or duplicate aliases.
+- Added an ABI-tagged runtime manifest, numerical/error equivalence gates, and strict module-loading
+  checks for the supported CPython 3.13 Windows x64 environment.
+- Added Losn attribution in NOTICE, package metadata, CLI version output, and low-profile
+  HTML/DOCX/XLSX/PNG metadata or footers without modifying CSV numerical structures.
+- Kept all hydrologic formulas, parameters, schemas, time grids, the 70-field result, and numerical
+  output unchanged; native equivalence does not establish basin calibration or engineering review.
+
+## 0.2.2 - 2026-08-25
+
+- Removed runtime ECharts downloads and CDN fallback from the full-chain HTML path; the default
+  four-piece HTML is now a standalone document with an inline SVG chart.
+- Unified PNG and inline-SVG chart construction on a professional hydrology layout: time axis on
+  top, inverted rainfall axis on the left, flow axis on the right, nested net-rain bars, raw
+  unsmoothed inflow/outflow series, and unchanged peak values.
+- Corrected full-chain chart and tabular rainfall mapping to use the actual `dt_rain_h` for bar
+  centres, widths, net-rain intensity, and time lookup instead of assuming one-hour input periods.
+- Restricted optional ECharts reports to an existing local UTF-8 JavaScript file embedded into the
+  document; URLs, network paths, missing files, and unknown backends fail closed. Its custom rain
+  renderer now consumes the contract's actual total/net bar widths instead of assuming 1 h.
+- Kept all hydrologic equations, schemas, time grids, parameters, and numerical outputs unchanged;
+  these checks are not a claim of basin calibration.
+
+## 0.2.1 - 2026-08-25
+
+- Unified all 19 runtime modules, CLI examples, tests, and CI on one maintainable execution path.
+- Verified the default 70-field full-chain JSON remains exactly equal to the previous runtime
+  baseline, and retained all 44 public regression tests.
+- Corrected the scientific-method documentation to distinguish the legacy aligned-duration rule
+  from the unified pipeline's explicit S-curve arbitrary-duration path.
+- Added a single root `VERSION`, `full_chain.py --version`, a package manifest with per-file
+  SHA-256, and clean-unpack release-contract tests.
+- Kept all hydrologic equations, parameter semantics, time grids, schemas, and numerical outputs
+  unchanged.
+
 ## 0.2.0 - 2026-08-24
 
 > 下文测试数量是开发阶段记录；v0.2.0 的公开发行审计独立验证了依赖安装、

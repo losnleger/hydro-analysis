@@ -18,8 +18,10 @@
   discrete volume normalization, an explicitly labeled area-only Tc estimate, and a `Tp`-only
   `ΔD≈0.2Tp` engineering bridge. The latter does not claim exact simultaneous reproduction of
   `lag=0.6Tc` and `ΔD=0.133Tc`; strict NRCS timing uses an input Tc.
-- Not reproduced: calibration for any real basin, spatial rainfall, baseflow, channel routing, snow/frozen-soil
-  runoff, reservoir regulation, uncertainty analysis, or design-standard approval.
+- Not professionally validated as an end-to-end field workflow: calibration for any real basin,
+  spatial rainfall, dynamic/continuous baseflow, backwater or gate-controlled channel hydraulics,
+  snow/frozen-soil runoff, controlled reservoir operations, uncertainty analysis, or
+  design-standard approval.
 
 ## Primary sources
 
@@ -79,7 +81,8 @@
 | Parameter priors | `loss_parameters.get_green_ampt_preset()`, `get_horton_preset()` | literature defaults with source/evidence/`requires_calibration`; not field-calibrated values |
 | Reach routing | `routing_methods.run_lag()`, `run_linear_reservoir()`, `run_lag_and_k()`, `run_muskingum()` | pure translation, linear reservoir, cascade, standard three-coefficient Muskingum with stability checks and volume balance |
 | Baseflow | `baseflow_methods.run_baseflow()` | `none` or `specified` constant/series; added after transform and before reach routing |
-| Observed metrics | `performance.evaluate_hydrograph()` | NSE, PBIAS, peak/volume relative error, peak-time error, RMSE; simulated values interpolated to observed times, overlap only |
+| Observed metrics | `performance.evaluate_hydrograph()` | NSE, KGE-2009, KGE-2012, MAE, PBIAS, peak/volume relative error, peak-time error, RMSE; simulated values interpolated to observed times, overlap only; zero KGE denominators return `None + status` |
+| Multi-event isolation | `event_dataset.prepare_event_dataset()`, `run_partition()`, `create_stage_lock()` | explicit UTC `[start,end)` boundaries; non-empty calibration/validation/blind roles; event-equal macro diagnostics; validation/blind require prior-stage dataset/split/config/area identity lock |
 | S-curve duration conversion | `uh_tools.unit_hydrograph_for_duration()` | `UH_new=(D1/D2)[S(t)-S(t-D2)]`; volume conservation and negative-oscillation diagnostics |
 | Velocity method Tc | `tc_methods.calculate_tc_velocity()` | NEH-630 Subpart F eq. 630.15-8 (sheet), fig. 630F-7 (shallow), eq. 630.15-10 (channel) |
 | AMC/HSG helpers | `cn_helpers.classify_amc()`, `classify_hsg()` | TR-55 antecedent rainfall classes; NEH-630 Table 7-1 HSG decision incl. A/D, B/D, C/D |
@@ -87,12 +90,12 @@
 | Reservoir routing | `reservoir_methods.route_reservoir()` | level-pool continuity `(I1+I2)/2·Δt-(O1+O2)/2·Δt=S2-S1`; trial, Modified Puls `N=S/Δt+O/2`, semi-graphical work table |
 | Model recommendation | `recommender.recommend_models()` | physical/data/evidence screening, candidate isolation, applicability ranking, multi-model envelope; observed metrics only when independent observations are supplied |
 | Reservoir unit contract | `reservoir_methods.route_reservoir()` | low-level time/dt in **seconds**; pipeline config uses hours and converts automatically |
-| Routing grid contract | `routing_methods.resample_flow_volume_conserving()`, `auto_subreaches` | independent `routing_dt_h` uses volume-conserving linear interpolation; native fine `dt` handled by auto subreach splitting |
+| Routing grid contract | `routing_methods.resample_flow_volume_conserving()`, `auto_subreaches` | independent `routing_dt_h` maps interval-start mean flows by cumulative interval volume; the last source interval is retained and any final target overhang is zero-filled; native fine `dt` is handled by auto subreach splitting |
 | Four-piece exports | `exporters.write_xlsx()`, `write_docx()`, `write_result_png()` | DOCX/XLSX/PNG joined into `export_report_package()` with HTML/JSON/CSV |
 | JSON export | `exporters.write_result_json()`, `write_summary_json()` | UTF-8, indented, `allow_nan=False`, round-trip safe |
 | CSV export | `exporters.write_rainfall_csv()`, `write_hydrograph_csv()`, `write_series_long_csv()`, `write_summary_csv()` | rainfall and flow retain their own time grids; UTF-8 BOM for Excel compatibility |
-| HTML report | `exporters.generate_report_html()` | standalone offline HTML, inline SVG obeying the inverted-rain/nested-net-rain/continuous-flow plotting contract |
-| Output package | `exporters.export_report_package()`, `scripts/export_report.pyc` | full JSON + summary JSON + CSVs + HTML + manifest |
+| HTML report | `exporters.generate_report_html()`, `build_four_piece.make_html()` | standalone offline HTML with inline SVG; optional ECharts requires an existing local UTF-8 file that is embedded, while URL/network paths fail closed |
+| Output package | `exporters.export_report_package()`, `scripts/export_report.py` | full JSON + summary JSON + CSVs + HTML + manifest |
 
 The published table is rounded. Its trapezoidal integral is about `1.33595`, so a dimensional
 curve that preserves the tabulated shape and exact discrete runoff volume has a peak about 0.2%
@@ -106,8 +109,10 @@ volume and reports the theoretical PRF peak separately as `Qp_per_mm`/`Qp`.
 - `ΔD=0.133Tc` is the target unit-excess duration. By default, the implementation selects the
   nearest exact divisor of `dt_rain_h` that also satisfies `ΔD<=0.25Tp`, records target and actual
   values, and recomputes `Tp=lag+ΔD/2` from the actual ΔD.
-- A user-specified `unit_duration_h` must exactly divide `dt_rain_h`. Incompatible durations fail
-  closed because an arbitrary-duration/S-curve transformation is not implemented.
+- In the legacy facade and the default `aligned` mode, a user-specified `unit_duration_h` must
+  exactly divide `dt_rain_h`; incompatible durations fail closed. The unified pipeline also offers
+  the explicit `unit_duration_resolution="s_curve"` path for arbitrary-duration conversion, with
+  negative-oscillation and volume-conservation checks.
 - When only interval intensity is available, it is assumed uniform inside the input interval.
   Cumulative SCS-CN runoff is recomputed at every actual ΔD boundary; interval runoff is not merely
   divided after applying the nonlinear cumulative CN equation.
@@ -118,8 +123,19 @@ volume and reports the theoretical PRF peak separately as `Qp_per_mm`/`Qp`.
   at least the published table 16-1 ordinate resolution. If omitted, it is selected automatically.
 - `time_h=0` is the start of the first rainfall interval; every reported depth applies over the
   following interval. The output exposes this convention in `time_reference`.
+- Reach-routing arrays use the existing discrete-volume contract `sum(Q_i) * dt`. When
+  `routing_dt_h` differs from transform `dt`, every source sample represents the full interval
+  beginning at its `time_h`; conservative resampling retains the last source interval. Reported
+  routed volume, peak time, and recession times use the actual routed grid, not transform `dt`.
+- The level-pool reservoir solver retains its node-flow trapezoidal continuity equation. It inherits
+  the actual reach grid. An explicit reservoir `dt_h` is a grid-consistency assertion and must match
+  the upstream grid; automatic interval-mean to node-flow resampling is not defined in this version.
 - The unit hydrograph always includes the complete table 16-1 tail to `5Tp`; convolution retains
   that complete recession.
+- Multi-event boundaries must match precipitation interval edges and use `[start,end)` semantics.
+  No dry-gap duration, rainfall threshold, or pre/post-event window is inferred by the software.
+  Every positive-rainfall interval must belong to exactly one event; observations are selected at
+  instants `start <= t < end` and each event requires at least two observation points.
 
 ## Fail-closed rules
 
@@ -192,3 +208,19 @@ uncertainty bounds for another watershed or storm.
 Passing these tests means official analytical reproduction and software/numerical validation only.
 It does not establish calibration, predictive skill, uncertainty bounds, or professional acceptance
 for any real watershed.
+
+### v0.3.1 multi-event metric and split-sample boundary
+
+- KGE-2009 follows Gupta et al. (2009), DOI `10.1016/j.jhydrol.2009.08.003`, with
+  `alpha=sigma_sim/sigma_obs` and `beta=mean_sim/mean_obs`.
+- KGE-2012 follows Kling, Fuchs & Paulin (2012), DOI
+  `10.1016/j.jhydrol.2012.01.011`, replacing the variability ratio with the coefficient-of-variation
+  ratio `gamma=CV_sim/CV_obs`; both variants remain explicitly named.
+- MAE follows the dimensional mean absolute error definition discussed by Willmott & Matsuura
+  (2005), DOI `10.3354/cr030079`.
+- Calibration/validation separation is an adaptation of split-sample testing principles in Klemes
+  (1986), DOI `10.1080/02626668609491024`; the additional blind role and hash lock are local
+  workflow safeguards, not terms or guarantees attributed to that paper.
+- Metrics are aggregated with one equal weight per event and never used here to update parameters
+  or automatically declare a best model. v0.3.1 synthetic tests can reach L2 only; independent
+  multi-event basin evidence would be required for L4.
